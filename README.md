@@ -66,8 +66,8 @@ npm install vue-utils-plugin
 ...
 ```
 
-License
+##### License
 -------
 
-    [LICENSE](https://github.com/mvpleung/vue-utils-plugin/blob/master/LICENSE)
+[LICENSE](https://github.com/mvpleung/vue-utils-plugin/blob/master/LICENSE)
 
