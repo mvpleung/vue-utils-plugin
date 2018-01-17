@@ -1,0 +1,36 @@
+{
+  "name": "vue-utils-plugin",
+  "version": "0.0.1",
+  "description": "Vue's tool plug-in",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
+    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mvpleung/vue-utils-plugin.git"
+  },
+  "keywords": [
+    "vue",
+    "utils",
+    "plugin"
+  ],
+  "author": "mvpleung",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mvpleung/vue-utils-plugin/issues"
+  },
+  "homepage": "https://github.com/mvpleung/vue-utils-plugin#readme",
+  "devDependencies": {
+    "webpack": "^2.4.1",
+    "cross-env": "^4.0.0",
+    "babel-core": "^6.0.0",
+    "babel-loader": "^6.0.0",
+    "lodash": "^4.17.4"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-latest": "^6.0.0"
+  }
+}
