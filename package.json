@@ -1,6 +1,6 @@
 {
   "name": "vue-utils-plugin",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vue's tool plug-in",
   "main": "index.js",
   "scripts": {
