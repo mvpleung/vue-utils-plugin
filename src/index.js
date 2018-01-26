@@ -2,23 +2,24 @@
  * @Author: liangzc 
  * @Date: 2017-07-31 
  * @Last Modified by: liangzc
- * @Last Modified time: 2018-01-17 14:00:38
+ * @Last Modified time: 2018-01-26 10:00:17
  */
-let defaultUtil = require('./default'),
-    uiTool = require('./ui.tool');
+let configOptions;
 
-let Utils = function () { };
-
+let init = function () {
+    this.$utils = Object.assign({}, require('./ui.tool'), require('./default'), (configOptions || {}).utils || {}); //添加vm实例验证属性
+};
 /**
  * @param {Vue} Vue 
  * @param {Object} options {utils: {replace: Function,...}}
  */
 let install = function (Vue, options) {
-    Vue.prototype.$utils = Object.assign(new Utils(), uiTool, defaultUtil, (options || {}).utils || {});
+    configOptions = options;
     Vue.mixin({
-        created: () => {
-            this.$utils = Vue.prototype.$utils;
-        }
+        created: init
     });
 };
+if (typeof window !== 'undefined' && window.Vue) {
+    window.Vue.use(verify);
+}
 module.exports = install;

@@ -130,6 +130,26 @@ module.exports = (function () {
     }
 
     /**
+     * 获取Url全部参数
+     * @returns {Object}
+     */
+    function getUrlVars(url) {
+        let vars = {}, hash;
+        let getParam = url => {
+            let hashes = (url || window.location.search).slice((url || window.location.search).indexOf('?') + 1).split('&');
+            for (let i = 0; i < hashes.length; i++) {
+                if (!isEmpty(hashes[i])) {
+                    hash = hashes[i].split('=');
+                    hash[1] && (vars[hash[0]] = hash[1].endWith('/') ? hash[1].slice(0, hash[1].length - 1) : hash[1])
+                }
+            }
+        }
+        getParam(url);
+        getParam(url ? (url.split('#')[1] || location.hash) : location.hash);
+        return vars;
+    }
+
+    /**
      * 移除URL中的参数
      * @param {String} url 
      * @param {String} name 
@@ -158,34 +178,39 @@ module.exports = (function () {
      */
     function setUrlParams(data, url) {
         if (!data || isEmptyObject(data)) return;
+        url = url ? decodeURIComponent(url) : url;
         let urlArray = (url || window.location.href).split('#'),
             newUrl = urlArray[1],
-            params = [];
+            params = [],
+            split = (url || window.location.href).indexOf('#') >= 0 ? '#' : '';
         forEach(data, (value, key) => {
             newUrl = removeUrlParam(newUrl, key);
             params.push(`${key}=${value}`);
         });
         newUrl = newUrl || urlArray[1] || '';
-        return urlArray[0] + '#' + newUrl + (newUrl.indexOf('?') != -1 ? `&${params.join('&')}` : `?${params.join('&')}`);
+        return urlArray[0] + split + newUrl + (newUrl.indexOf('?') != -1 ? `&${params.join('&')}` : `?${params.join('&')}`);
     }
 
     /**
      * 存入session数据
      * @param {String} key 键名
      * @param {*} value 要存入的数据
+     * @param {Boolean} needCipher 是否加密存储
      */
-    function setSessionStorage(key, value) {
-        sessionStorage[key] = value instanceof Object ? JSON.stringify(value) : value;
+    function setSessionStorage(key, value, needCipher) {
+        let str = value instanceof Object ? JSON.stringify(value) : value;
+        sessionStorage[key] = str && needCipher ? cipher(str) : str;
     }
 
     /**
      * 获取session数据
      * @param {String} key 键名
+     * @param {Boolean} needDecipher 是否需要解密获取数据
      * @return {*}
      */
-    function getSessionStorage(key) {
+    function getSessionStorage(key, needDecipher) {
         try {
-            return JSON.parse(sessionStorage[key]);
+            return JSON.parse(sessionStorage[key] && needDecipher ? deCipher(sessionStorage[key]) : sessionStorage[key]);
         } catch (e) {
             console.warn('SessionStorage.Parse:', '[key:', key, ']', e.message);
             return sessionStorage[key];
@@ -196,20 +221,25 @@ module.exports = (function () {
      * 存入local数据
      * @param {String} key 键名
      * @param {*} value 要存入的数据
-     * @param {Number} exp 过期时间，单位：秒
+     * @param {Object} option 配置项
+     * 
+     * @param {option} exp 过期时间，单位：秒
+     * @param {option} needCipher 是否加密存储
      */
-    function setLocalStorage(key, value, exp) {
+    function setLocalStorage(key, value, option) {
         try {
-            if (exp && typeof exp === 'number') {
+            let localStr;
+            if (option && typeof option.exp === 'number') {
                 let expDate = new Date();
-                expDate.setSeconds(exp);
-                localStorage[key] = JSON.stringify({
+                expDate.setSeconds(option.exp);
+                localStr = JSON.stringify({
                     data: value,
                     time: expDate.getTime()
                 });
             } else {
-                localStorage[key] = value instanceof Object ? JSON.stringify(value) : value;
+                localStr = value instanceof Object ? JSON.stringify(value) : value;
             }
+            localStorage[key] = localStr && option && option.needCipher ? cipher(localStr) : localStr;
             return true;
         } catch (e) {
             alert('您的web浏览器不支持本地存储设置。在Safari中，最常见的原因是使用“私人浏览模式”或“无痕浏览”。有些设置可能无法保存或某些功能可能无法正常工作。');
@@ -220,16 +250,20 @@ module.exports = (function () {
     /**
      * 获取local数据
      * @param {String} key 键名
-     * @param {Number} exp 过期时间（是否超过此时间）
-     * @param {Boolean} force 是否强制删除已过期数据，true：已过期数据返回空
+     * @param {Object} option 配置项
+     * 
+     * @param {option} exp 过期时间（是否超过此时间）
+     * @param {option} force 是否强制删除已过期数据，true：已过期数据返回空
+     * @param {option} needDecipher 是否需要解密存储的数据
+     * 
      * @return {*} 存在 exp : {data: value, time: 过期时间, expire: 是否过期} , 不存在 exp ： 原路返回
      */
-    function getLocalStorage(key, exp, force) {
+    function getLocalStorage(key, option) {
         try {
-            let local = JSON.parse(localStorage[key]);
-            if (exp && typeof exp === 'number' && local && is('Object', local) && local.time) {
-                local.expire = new Date().getTime() - local.time > exp * 1000;
-                if (force && local.expire) {
+            let local = JSON.parse(localStorage[key] && option && option.needDecipher ? deCipher(localStorage[key]) : localStorage[key]);
+            if (option && typeof option.exp === 'number' && local && is('Object', local) && local.time) {
+                local.expire = new Date().getTime() - local.time > option.exp * 1000;
+                if (option.force && local.expire) {
                     return null;
                 }
             }
@@ -355,6 +389,22 @@ module.exports = (function () {
             today = null;
         }
         return 0;
+    }
+
+    /**
+     * 比较日期大小
+     * @param {Object} date1 
+     * @param {Object} date2
+     * 
+     * @return {Boolean} 
+     */
+    function compareDate(date1, date2) {
+        if (!date1 || !date2) {
+            return false;
+        }
+        let dateTime1 = date1 instanceof Date ? date1.getTime() : /^(\+|-)?\d+($|\.\d+$)/.test(date1) ? date1 : new Date(date1).getTime();
+        let dateTime2 = date2 instanceof Date ? date2.getTime() : /^(\+|-)?\d+($|\.\d+$)/.test(date2) ? date2 : new Date(date2).getTime();
+        return dateTime1 > dateTime2;
     }
 
     /**
@@ -566,17 +616,224 @@ module.exports = (function () {
     }
 
     /**
+     * 获取 crypto 模块
+     */
+    function crypto() {
+        return window.nj_crypto || (window.nj_crypto = require('crypto'));
+    }
+
+    /**
      * 获取hash值
      * @param {String} data 需要hash编码的值
      * @param {Number} length 长度
      */
     function revHash(data, length) {
-        let crypto = window.wp_crypto;
-        if (!crypto) {
-            crypto = require('crypto');
-            window.wp_crypto = crypto;
+        return window.nj_crypto_md5 || (window.nj_crypto_md5 = crypto().createHash('md5').update(data || '').digest('hex').slice(0, length || 10));
+    }
+
+    /**
+     * 使用 aes192 加密数据
+     * @param {String} data 加密的数据 
+     * @param {String} pwd 加密的密码(默认为系统提供)
+     */
+    function cipher(data, pwd) {
+        const cipher = crypto().createCipher('aes192', pwd || '5d40af863c18');
+
+        let encrypted = cipher.update(data, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return encrypted;
+    }
+
+    /**
+     * 使用 aes192 解密数据
+     * @param {String} encrypted 需要解密的加密串 
+     * @param {String} pwd 解密的密码(默认为系统提供)
+     */
+    function deCipher(encrypted, pwd) {
+        const decipher = crypto().createDecipher('aes192', pwd || '5d40af863c18');
+
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    }
+
+    /**
+     * 深度合并（Object.assign 升级版）
+     */
+    function deepAssign() {
+        _lodash = _lodash || require('lodash');
+        return _lodash.defaultsDeep.apply(this, arguments);
+    }
+
+    /**
+     * 深拷贝
+     * @param {Object} source 
+     */
+    function deepClone(source) {
+        if (!source && typeof source !== 'object') {
+            throw new Error('error arguments', 'shallowClone')
         }
-        return crypto.createHash('md5').update(data || '').digest('hex').slice(0, length || 10);
+        const targetObj = source.constructor === Array ? [] : {}
+        for (const keys in source) {
+            if (source.hasOwnProperty(keys)) {
+                if (source[keys] && typeof source[keys] === 'object') {
+                    targetObj[keys] = source[keys].constructor === Array ? [] : {}
+                    targetObj[keys] = deepClone(source[keys])
+                } else {
+                    targetObj[keys] = source[keys]
+                }
+            }
+        }
+        return targetObj
+    }
+
+    /**
+     * 延迟触发
+     * @param {Function} func 回调函数
+     * @param {Number} wait 等待时间 
+     * @param {Boolean} immediate 不等待上次结束，重新触发等待时间
+     */
+    function debounce(func, wait, immediate) {
+        let timeout, args, context, timestamp, result
+
+        const later = function () {
+            // 据上一次触发时间间隔
+            const last = +new Date() - timestamp
+
+            // 上次被包装函数被调用时间间隔last小于设定时间间隔wait
+            if (last < wait && last > 0) {
+                timeout = setTimeout(later, wait - last)
+            } else {
+                timeout = null
+                // 如果设定为immediate===true，因为开始边界已经调用过了此处无需调用
+                if (!immediate) {
+                    result = func.apply(context, args)
+                    if (!timeout) context = args = null
+                }
+            }
+        }
+
+        return function (...args) {
+            context = this
+            timestamp = +new Date()
+            const callNow = immediate && !timeout
+            // 如果延时不存在，重新设定延时
+            if (!timeout) timeout = setTimeout(later, wait)
+            if (callNow) {
+                result = func.apply(context, args)
+                context = args = null
+            }
+
+            return result
+        }
+    }
+
+    /**
+     * 深度合并克隆（参数同 Object.assign）
+     */
+    function assignClone() {
+        let assign = deepAssign.apply(this, arguments);
+        return deepClone(assign);
+    }
+
+    /**
+     * 千分位分割
+     * @param {Number} num 数字 
+     */
+    function toThousandslsFilter(num) {
+        return (+num || 0).toString().replace(/^-?\d+/g, m => m.replace(/(?=(?!\b)(\d{3})+$)/g, ','))
+    }
+
+    /**
+     * 导出 table 标签到 excel
+     * @param {String} selector table 选择器
+     * @param {String} fileName 导出的文件名
+     * @param {Array/String} tHeader 表头数组或表头选择器
+     * @param {Object} opts 配置项目(忽略下标:{ignore: index})
+     */
+    function exportTableToExcel(selector, fileName, tHeader, opts) {
+        return new Promise((resolve, reject) => {
+            if (isEmpty(selector) || !is('String', selector)) {
+                this.$message({
+                    message: '没有可用于导出的表格',
+                    type: 'warning'
+                });
+                reject();
+                return;
+            }
+            require.ensure([], () => {
+                const { export_table_to_excel } = require('./Export2Excel');
+                export_table_to_excel(selector, fileName, tHeader, opts);
+                resolve();
+            })
+        });
+    }
+
+    /**
+     * 导出JSON数据到Excel
+     * @param {Array} tHeader 表头 (子项可以 String或者{key: 'birthday', value: '生日', type: 'date'})
+     * @param {Array} jsonData 表体(当 tHeader 包含 key、value、type 时，根据对应的 key 过滤 jsonData 导出的数据)
+     * @param {String} fileName 文件名
+     */
+    function exportJsonToExcel(tHeader, jsonData, fileName) {
+        return new Promise((resolve, reject) => {
+            if (!Array.isArray(tHeader) || !Array.isArray(jsonData) || tHeader.length === 0 || jsonData.length === 0) {
+                this.$message({
+                    message: '没有可用于导出的数据',
+                    type: 'warning'
+                });
+                reject('没有可用于导出的数据');
+                return;
+            }
+            require.ensure([], () => {
+                let data = jsonData,
+                    headerArray = [];
+                if (is('Object', tHeader[0]) && tHeader[0].hasOwnProperty('key')) {
+                    data = jsonData.map(v =>
+                        tHeader.map(j => {
+                            headerArray.length < tHeader.length && headerArray.push(j.value);
+                            if (j.type === 'date') {
+                                return formatDateTime(v[j.key]);
+                            } else {
+                                return v[j.key];
+                            }
+                        })
+                    );
+                }
+                const { export_json_to_excel } = require('./Export2Excel');
+                export_json_to_excel(headerArray, data, fileName);
+                resolve();
+            })
+        });
+    }
+
+    /**
+     * 重置Model对象
+     * @param {Object/Array} model
+     * @param {String/Array} ignore 忽略字段
+     * @param {Boolean} deep 是否深度重置（内嵌对象重置） 
+     */
+    function resetModel(model, ignore, deep) {
+        if (typeof ignore === 'boolean') {
+            deep = ignore;
+            ignore = [];
+        }
+        ignore = Array.isArray(ignore) ? ignore : [ignore];
+        if (is('Object', model)) {
+            forEach(model, (value, key) => {
+                if (inArray(key, ignore) >= 0) return true;
+                if (is('Object', value)) {
+                    deep ? resetModel(value, ignore) : (model[key] = {});
+                } else if (Array.isArray(value)) {
+                    deep ? value.forEach(vl => resetModel(vl, ignore)) : (model[key] = []);
+                } else {
+                    model[key] = '';
+                }
+            })
+        } else if (Array.isArray(model)) {
+            model.forEach(item => resetModel(item, ignore));
+        }
+        return model;
     }
 
     /**
@@ -586,18 +843,10 @@ module.exports = (function () {
      * @param {Array} keys 需要赋值的键名
      */
     function setModelValue(model, value, keys) {
-        if (is('Object', value)) {
-            value = value || {};
-            if (keys && Array.isArray(keys)) {
-                keys.forEach(key => {
-                    setModelValue(model[key], value[key]);
-                });
-            } else {
-                model.val = value.value || value.val;
-                model.val_text = value.label || value.val_text;
-            }
-        } else {
-            model.val = model.val_text = value;
+        if (keys && Array.isArray(keys)) {
+            keys.forEach(key => {
+                model[key] = value[key];
+            });
         }
         return model;
     }
@@ -607,6 +856,7 @@ module.exports = (function () {
         trim: trim, //去除空格
         is: is, //数据类型判断(Object/Array/String等)
         getUrlParams: getUrlParams, //获取Url传参(a?code=123)
+        getUrlVars: getUrlVars, //获取URL全部参数
         removeUrlParam: removeUrlParam, //移除URL参数
         setUrlParams: setUrlParams, //设置URL参数
         setSessionStorage: setSessionStorage, //存入 session 缓存 （自动转换为String）
@@ -618,6 +868,7 @@ module.exports = (function () {
         formatDateTime: formatDateTime, //格式化日期(支持Date、时间戳、日期格式字符串)
         calYear: calYear, //计算相差年份
         calcAge: calcAge, //计算周岁
+        compareDate: compareDate, //比较日期大小
         uuid: uuid, //生成36位唯一码（同 Java UUID）
         hideKeyboard: hideKeyboard, //隐藏软键盘
         pathToRegexp: pathToRegexp, //根据规则获取路径参数（/123/456 => /:code/:id）
@@ -629,6 +880,16 @@ module.exports = (function () {
         forEach: forEach, //扩展 forEach，支持 Object/Array , 支持 return false 跳出循环（提高执行效率）
         inArray: inArray, //同 jQuery inArray , 是否存在某数组中，返回下标，-1：未找到
         revHash: revHash, //获取hash值
+        cipher: cipher, //使用 aes192 加密数据
+        deCipher: deCipher, //使用 aes192 解密数据
+        deepAssign: deepAssign, //对象深拷贝
+        deepClone: deepClone, //对象深拷贝
+        debounce: debounce, //延迟触发（函数抖动）
+        assignClone: assignClone, //深度合并（深度合并克隆）
+        toThousandslsFilter: toThousandslsFilter, //千分位分割
+        exportTableToExcel: exportTableToExcel, //导出table表格到 Excel
+        exportJsonToExcel: exportJsonToExcel, //导出JSON数据到Excel
+        resetModel: resetModel, //重置Model对象
         setModelValue: setModelValue //设置Model 数据 setModelValue(obj, value);
     }
 })();
