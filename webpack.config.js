@@ -6,7 +6,7 @@ module.exports={
     output:{
         path: path.resolve(__dirname, './dist'),
         publicPath: '/',
-        filename: 'utils-plugin.js'
+        filename: 'utils-plugin.min.js'
     },
     module:{
         rules:[
@@ -36,7 +36,7 @@ if (process.env.NODE_ENV === 'production') {
             }
         }),
         new webpack.LoaderOptionsPlugin({
-            //minimize: true
+            minimize: true
         })
     ])
 }
