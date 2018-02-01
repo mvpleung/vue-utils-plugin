@@ -66,13 +66,6 @@ module.exports = (function () {
             s = s.replace(new RegExp("\\{" + i + "\\}", "g"), arguArray[i]);
         return s;
     };
-
-    Array.prototype.indexOf = function (val) {
-        for (let i = 0; i < this.length; i++) {
-            if (this[i] == val) return i;
-        }
-        return -1;
-    };
     Array.prototype.remove = function (val) {
         let index = this.indexOf(val);
         if (index > -1) {
@@ -843,10 +836,15 @@ module.exports = (function () {
      * @param {Array} keys 需要赋值的键名
      */
     function setModelValue(model, value, keys) {
+        if (!value) return model;
         if (keys && Array.isArray(keys)) {
             keys.forEach(key => {
                 model[key] = value[key];
             });
+        } else {
+            forEach(value, (val, key) => {
+                model[key] = val;
+            })
         }
         return model;
     }
