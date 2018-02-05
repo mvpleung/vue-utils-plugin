@@ -2,25 +2,27 @@
  * @Author: liangzc 
  * @Date: 2017-07-31 
  * @Last Modified by: liangzc
- * @Last Modified time: 2018-01-26 14:58:28
+ * @Last Modified time: 2018-02-01 15:00:46
  */
-let $Vue, configOptions;
+let $utils;
 
-let init = function () {
-    $Vue.$utils = this.$utils = Object.assign({}, require('./ui.tool'), require('./default'), (configOptions || {}).utils || {}); //添加vm实例验证属性
+let init = function (Vue, options) {
+  $utils = Object.assign({}, require('./ui.tool'), require('./default'), (options || {}).utils || {}); //添加vm实例验证属性
+  Vue.$utils = $utils; //添加vm实例验证属性
 };
 /**
  * @param {Vue} Vue 
  * @param {Object} options {utils: {replace: Function,...}}
  */
 let install = function (Vue, options) {
-    $Vue = Vue;
-    configOptions = options;
-    Vue.mixin({
-        created: init
-    });
+  init(Vue, options);
+  Vue.mixin({
+    created: function () {
+      this.$utils = $utils;
+    }
+  })
 };
 if (typeof window !== 'undefined' && window.Vue) {
-    window.Vue.use(install);
+  window.Vue.use(install);
 }
 module.exports = install;
