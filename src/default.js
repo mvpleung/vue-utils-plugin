@@ -315,7 +315,7 @@ module.exports = (function () {
 
     /**
      * 格式化时间
-     * @param {Number} unixTime 日期或时间戳
+     * @param {Date|Number} unixTime 日期或时间戳
      * @param {String} pattern 日期格式规则(如:YYYY-MM-dd)
      * @return {*}
      */
@@ -333,7 +333,7 @@ module.exports = (function () {
 
     /**
      * 计算年份，返回 yyyy-MM-dd
-     * @param {Data/String} date 日期对象或日期字符串
+     * @param {Data|String} date 日期对象或日期字符串
      * @param {Number} year 负数减一年，正数加一年
      * @returns {String}
      */
@@ -573,7 +573,7 @@ module.exports = (function () {
 
     /**
      * 自定义forEach函数，支持 return false
-     * @param {Object/Array} arr 需要循环的对象
+     * @param {Object|Array} arr 需要循环的对象
      * @param {Function} func 回调函数
      */
     function forEach(arr, func) {
@@ -741,7 +741,7 @@ module.exports = (function () {
      * 导出 table 标签到 excel
      * @param {String} selector table 选择器
      * @param {String} fileName 导出的文件名
-     * @param {Array/String} tHeader 表头数组或表头选择器
+     * @param {Array|String} tHeader 表头数组或表头选择器
      * @param {Object} opts 配置项目(忽略下标:{ignore: index})
      */
     function exportTableToExcel(selector, fileName, tHeader, opts) {
@@ -802,8 +802,8 @@ module.exports = (function () {
 
     /**
      * 重置Model对象
-     * @param {Object/Array} model
-     * @param {String/Array} ignore 忽略字段
+     * @param {Object|Array} model
+     * @param {String|Array} ignore 忽略字段
      * @param {Boolean} deep 是否深度重置（内嵌对象重置） 
      */
     function resetModel(model, ignore, deep) {
@@ -852,7 +852,7 @@ module.exports = (function () {
     return {
         isEmpty: isEmpty, //是否为空
         trim: trim, //去除空格
-        is: is, //数据类型判断(Object/Array/String等)
+        is: is, //数据类型判断(Object|Array|String等)
         getUrlParams: getUrlParams, //获取Url传参(a?code=123)
         getUrlVars: getUrlVars, //获取URL全部参数
         removeUrlParam: removeUrlParam, //移除URL参数
@@ -875,12 +875,12 @@ module.exports = (function () {
         camelCase: camelCase, //转换驼峰命名（驼峰转连接符、连接符转驼峰）
         koala: koala, //输入框延迟触发函数（输入完毕再触发，避免频繁触发）
         isEmptyObject: isEmptyObject, //是否为空对象({}）
-        forEach: forEach, //扩展 forEach，支持 Object/Array , 支持 return false 跳出循环（提高执行效率）
+        forEach: forEach, //扩展 forEach，支持 Object|Array , 支持 return false 跳出循环（提高执行效率）
         inArray: inArray, //同 jQuery inArray , 是否存在某数组中，返回下标，-1：未找到
         revHash: revHash, //获取hash值
         cipher: cipher, //使用 aes192 加密数据
         deCipher: deCipher, //使用 aes192 解密数据
-        deepAssign: deepAssign, //对象深拷贝
+        deepAssign: deepAssign, //深度合并（Object.assign 升级版）
         deepClone: deepClone, //对象深拷贝
         debounce: debounce, //延迟触发（函数抖动）
         assignClone: assignClone, //深度合并（深度合并克隆）
