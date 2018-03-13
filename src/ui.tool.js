@@ -86,4 +86,4 @@ let UiTools = (function() {
 
 typeof exports === 'object' && typeof module !== 'undefined' ?
   module.exports = UiTools :
-  window.UnionPay = UiTools;
+  window.UiTools = UiTools;

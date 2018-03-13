@@ -1028,4 +1028,4 @@ let Utils = (function() {
 
 typeof exports === 'object' && typeof module !== 'undefined' ?
   module.exports = Utils :
-  window.UnionPay = Utils;
+  window.Utils = Utils;
