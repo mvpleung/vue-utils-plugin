@@ -1,7 +1,7 @@
 /* eslint-disable */
 require('./Blob');
-// import XLSX from 'xlsx'
-import { saveAs } from 'file-saver'
+// import XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 !window.XLSX && (window.XLSX = require('xlsx'));
 
@@ -12,7 +12,7 @@ import { saveAs } from 'file-saver'
  * @return {Boolean}
  */
 function is(type, val) {
-  return Object.prototype.toString.call(val) === ("[object " + type + "]")
+  return Object.prototype.toString.call(val) === '[object ' + type + ']';
 }
 
 function generateArray(table) {
@@ -28,11 +28,16 @@ function generateArray(table) {
       let colspan = cell.getAttribute('colspan');
       let rowspan = cell.getAttribute('rowspan');
       let cellValue = cell.innerText;
-      if (cellValue !== "" && cellValue == +cellValue) cellValue = +cellValue;
+      if (cellValue !== '' && cellValue == +cellValue) cellValue = +cellValue;
 
       //Skip ranges
-      ranges.forEach(function (range) {
-        if (R >= range.s.r && R <= range.e.r && outRow.length >= range.s.c && outRow.length <= range.e.c) {
+      ranges.forEach(function(range) {
+        if (
+          R >= range.s.r &&
+          R <= range.e.r &&
+          outRow.length >= range.s.c &&
+          outRow.length <= range.e.c
+        ) {
           for (let i = 0; i <= range.e.c - range.s.c; ++i) outRow.push(null);
         }
       });
@@ -41,20 +46,22 @@ function generateArray(table) {
       if (rowspan || colspan) {
         rowspan = rowspan || 1;
         colspan = colspan || 1;
-        ranges.push({ s: { r: R, c: outRow.length }, e: { r: R + rowspan - 1, c: outRow.length + colspan - 1 } });
-      };
+        ranges.push({
+          s: { r: R, c: outRow.length },
+          e: { r: R + rowspan - 1, c: outRow.length + colspan - 1 }
+        });
+      }
 
       //Handle Value
-      outRow.push(cellValue !== "" ? cellValue : null);
+      outRow.push(cellValue !== '' ? cellValue : null);
 
       //Handle Colspan
-      if (colspan)
-        for (let k = 0; k < colspan - 1; ++k) outRow.push(null);
+      if (colspan) for (let k = 0; k < colspan - 1; ++k) outRow.push(null);
     }
     out.push(outRow);
   }
   return [out, ranges];
-};
+}
 
 function datenum(v, date1904) {
   if (date1904) v += 1462;
@@ -67,10 +74,15 @@ function sheet_from_array_of_arrays(data, opts) {
   let range = { s: { c: 10000000, r: 10000000 }, e: { c: 0, r: 0 } };
   if (data.length > 0) {
     data = data.filter(item => item.length > 0);
-    opts && opts.ignore && (data = data.map(item => {
-      typeof opts.ignore === 'number' ? item.removeIndex(opts.ignore) : item.remove(opts.ignore);
-      return item;
-    }))
+    opts &&
+      opts.ignore &&
+      opts.ignore.hasOwnProperty('index') &&
+      (data = data.map(item => {
+        typeof opts.ignore.index === 'number'
+          ? item.removeIndex(opts.ignore.index)
+          : item.remove(opts.ignore.index);
+        return item;
+      }));
   }
   for (let R = 0; R != data.length; ++R) {
     for (let C = 0; C != data[R].length; ++C) {
@@ -90,6 +102,7 @@ function sheet_from_array_of_arrays(data, opts) {
         cell.v = datenum(cell.v);
       } else cell.t = 's';
 
+      opts && opts.ignore && opts.ignore.noneType === true && (cell.t = 's');
       ws[cell_ref] = cell;
     }
   }
@@ -106,17 +119,17 @@ function Workbook() {
 function s2ab(s) {
   let buf = new ArrayBuffer(s.length);
   let view = new Uint8Array(buf);
-  for (let i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+  for (let i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff;
   return buf;
 }
 
 /**
  * 导出table到Excel表格
- * 
- * @param {String} id table标签ID 
+ *
+ * @param {String} id table标签ID
  * @param {String} fileName 文件名
  * @param {Array/String} th 表头数组或表头选择器
- * @param {Object} opts 配置项目(忽略下标:{ignore: index})
+ * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
  */
 export function export_table_to_excel(id, fileName, th, opts) {
   let theTable = document.getElementById(id) || document.querySelector(id);
@@ -127,8 +140,11 @@ export function export_table_to_excel(id, fileName, th, opts) {
     opts = th;
     th = null;
   }
-  if (th && typeof th === 'string' || !th) {
-    let thels = th && typeof th === 'string' ? document.querySelectorAll(th) : theTable.querySelectorAll('th');
+  if ((th && typeof th === 'string') || !th) {
+    let thels =
+      th && typeof th === 'string'
+        ? document.querySelectorAll(th)
+        : theTable.querySelectorAll('th');
     if (thels && thels.length > 0) {
       th = [];
       thels.forEach(item => {
@@ -145,22 +161,22 @@ export function export_table_to_excel(id, fileName, th, opts) {
 
 /**
  * 导出JSON数组为Excel表格
- * 
- * @param {Array} th 表头 
+ *
+ * @param {Array} th 表头
  * @param {Array} jsonData 数据集合
  * @param {String} fileName 导出Excel 的文件名
+ * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
  */
-export function export_json_to_excel(th, jsonData, fileName) {
-
+export function export_json_to_excel(th, jsonData, fileName, opts) {
   /* original data */
 
   let data = jsonData;
   data.unshift(th);
-  saveExcel(data, null, fileName);
+  saveExcel(data, null, fileName, opts);
 }
 
 function saveExcel(data, ranges, fileName, opts) {
-  let ws_name = "SheetJS";
+  let ws_name = 'SheetJS';
 
   let wb = new Workbook(),
     ws = sheet_from_array_of_arrays(data, opts);
@@ -169,18 +185,19 @@ function saveExcel(data, ranges, fileName, opts) {
   ranges && (ws['!merges'] = ranges);
 
   /*设置worksheet每列的最大宽度*/
-  const colWidth = data.map(row => row.map(val => {
-    /*先判断是否为null/undefined*/
-    if (val == null) {
-      return { 'wch': 10 };
-    }
-    /*再判断是否为中文*/
-    else if (val.toString().charCodeAt(0) > 255) {
-      return { 'wch': val.toString().length * 2 };
-    } else {
-      return { 'wch': val.toString().length };
-    }
-  }))
+  const colWidth = data.map(row =>
+    row.map(val => {
+      /*先判断是否为null/undefined*/
+      if (val == null) {
+        return { wch: 10 };
+      } else if (val.toString().charCodeAt(0) > 255) {
+        /*再判断是否为中文*/
+        return { wch: val.toString().length * 5 };
+      } else {
+        return { wch: val.toString().length };
+      }
+    })
+  );
   /*以第一行为初始值*/
   let result = colWidth[0];
   for (let i = 1; i < colWidth.length; i++) {
@@ -191,11 +208,19 @@ function saveExcel(data, ranges, fileName, opts) {
     }
   }
   ws['!cols'] = result;
+  ws['!rows'] = new Array(data.length).fill({ hpx: 20 });
 
   /* add worksheet to workbook */
   wb.SheetNames.push(ws_name);
   wb.Sheets[ws_name] = ws;
 
-  let wbout = XLSX.write(wb, { bookType: 'xlsx', bookSST: false, type: 'binary' });
-  saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), (fileName || 'excel') + '.xlsx');
+  let wbout = XLSX.write(wb, {
+    bookType: 'xlsx',
+    bookSST: false,
+    type: 'binary'
+  });
+  saveAs(
+    new Blob([s2ab(wbout)], { type: 'application/octet-stream' }),
+    (fileName || 'excel') + '.xlsx'
+  );
 }

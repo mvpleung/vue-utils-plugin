@@ -4,7 +4,7 @@ let Utils = (function() {
    * 日期格式化
    * @param {String} fmt 日期格式
    */
-  Date.prototype.Format = function(fmt) {
+  Date.prototype.Format = function(fmt = 'yyyy-MM-dd') {
     //author: meizz
     let o = {
       'M+': this.getMonth() + 1, //月份
@@ -116,6 +116,15 @@ let Utils = (function() {
   }
 
   /**
+   * 是否为空数组
+   * @param  {*}  value
+   * @return {Boolean}
+   */
+  function isEmptyArray(value) {
+    return Array.isArray(value) ? value.length <= 0 : true;
+  }
+
+  /**
    * 去除空格
    * @param  {String}  str 字符串
    * @return {String}
@@ -216,7 +225,7 @@ let Utils = (function() {
     if (!data || isEmptyObject(data)) return;
     url = url ? decodeURIComponent(url) : url;
     let urlArray = (url || window.location.href).split('#'),
-      newUrl = urlArray[1],
+      newUrl = urlArray[1] || urlArray[0],
       params = [],
       split = (url || window.location.href).indexOf('#') >= 0 ? '#' : '';
     forEach(data, (value, key) => {
@@ -225,7 +234,7 @@ let Utils = (function() {
     });
     newUrl = newUrl || urlArray[1] || '';
     return (
-      urlArray[0] +
+      (urlArray[1] ? urlArray[0] : '') +
       split +
       newUrl +
       (newUrl.indexOf('?') !== -1 ?
@@ -240,7 +249,7 @@ let Utils = (function() {
    * @param {*} value 要存入的数据
    * @param {Boolean} needCipher 是否加密存储
    */
-  function setSessionStorage(key, value, needCipher) {
+  function setSessionItem(key, value, needCipher) {
     let str = value instanceof Object ? JSON.stringify(value) : value;
     sessionStorage[key] = str && needCipher ? cipher(str) : str;
   }
@@ -251,7 +260,7 @@ let Utils = (function() {
    * @param {Boolean} needDecipher 是否需要解密获取数据
    * @return {*}
    */
-  function getSessionStorage(key, needDecipher) {
+  function getSessionItem(key, needDecipher) {
     try {
       return JSON.parse(
         sessionStorage[key] && needDecipher ?
@@ -265,6 +274,14 @@ let Utils = (function() {
   }
 
   /**
+   * 移除Session
+   * @param {String} key 键名
+   */
+  function removeSessionItem(key) {
+    sessionStorage.removeItem(key);
+  }
+
+  /**
    * 存入local数据
    * @param {String} key 键名
    * @param {*} value 要存入的数据
@@ -273,15 +290,17 @@ let Utils = (function() {
    * @param {option} exp 过期时间，单位：秒
    * @param {option} needCipher 是否加密存储
    */
-  function setLocalStorage(key, value, option) {
+  function setLocalItem(key, value, option) {
     try {
+      if (typeof option === 'boolean') {
+        option = { needCipher: option };
+      }
       let localStr;
       if (option && typeof option.exp === 'number') {
-        let expDate = new Date();
-        expDate.setSeconds(option.exp);
         localStr = JSON.stringify({
           data: value,
-          time: expDate.getTime()
+          time: Date.now(),
+          exp: option.exp
         });
       } else {
         localStr = value instanceof Object ? JSON.stringify(value) : value;
@@ -300,38 +319,37 @@ let Utils = (function() {
   /**
    * 获取local数据
    * @param {String} key 键名
-   * @param {Object} option 配置项
-   *
-   * @param {option} exp 过期时间（是否超过此时间）
-   * @param {option} force 是否强制删除已过期数据，true：已过期数据返回空
    * @param {option} needDecipher 是否需要解密存储的数据
    *
    * @return {*} 存在 exp : {data: value, time: 过期时间, expire: 是否过期} , 不存在 exp ： 原路返回
    */
-  function getLocalStorage(key, option) {
+  function getLocalItem(key, needDecipher) {
     try {
       let local = JSON.parse(
-        localStorage[key] && option && option.needDecipher ?
+        localStorage[key] && needDecipher ?
           deCipher(localStorage[key]) :
           localStorage[key]
       );
-      if (
-        option &&
-        typeof option.exp === 'number' &&
-        local &&
-        is('Object', local) &&
-        local.time
-      ) {
-        local.expire = new Date().getTime() - local.time > option.exp * 1000;
-        if (option.force && local.expire) {
+      if (local && is('Object', local) && local.time && local.exp) {
+        local.expire = new Date().getTime() - local.time > local.exp * 1000;
+        if (local.expire) {
           return null;
         }
+        return local.data;
       }
       return local;
     } catch (e) {
       console.warn('LocalStorage.Parse:', '[key:', key, ']', e.message);
       return localStorage[key];
     }
+  }
+
+  /**
+   * 移除Local
+   * @param {String} key 键名
+   */
+  function removeLocalItem(key) {
+    localStorage.removeItem(key);
   }
 
   /**
@@ -389,11 +407,17 @@ let Utils = (function() {
    * @param {String} pattern 日期格式规则(如:YYYY-MM-dd)
    * @return {*}
    */
-  function formatDateTime(unixTime, pattern) {
+  function formatDateTime(unixTime, pattern = 'yyyy-MM-dd') {
     if (unixTime instanceof Date) {
-      return unixTime.Format(pattern ? pattern : 'yyyy-MM-dd');
+      return unixTime.Format(pattern);
     }
-    if (is('String', unixTime)) {
+    if (is('String', unixTime) && !isEmpty(unixTime)) {
+      unixTime = unixTime
+        .replace(/T/g, ' ')
+        .replace(/\.[\d]{3}Z/, '')
+        .replace(/(-)/g, '/');
+      if (unixTime.indexOf('.') > 0)
+        unixTime = unixTime.slice(0, unixTime.indexOf('.'));
       if (unixTime.length === 8) {
         unixTime =
           unixTime.substring(0, 4) +
@@ -405,19 +429,21 @@ let Utils = (function() {
     }
     return !unixTime || isEmpty(unixTime) ?
       '' :
-      !/^(\+|-)?\d+($|\.\d+$)/.test(unixTime) ?
-        unixTime :
-        new Date(unixTime).Format(pattern ? pattern : 'yyyy-MM-dd');
+      new Date(unixTime).Format(pattern);
   }
 
   /**
-   * 计算年份，返回 yyyy-MM-dd
+   * 步进年份，返回 yyyy-MM-dd
    * @param {Data|String} date 日期对象或日期字符串
    * @param {Number} year 负数减一年，正数加一年
    * @returns {String}
    */
-  function calYear(date, year) {
-    let d = typeof date === 'object' ? date : new Date(date);
+  function stepYear(date, year) {
+    if (is('Number', date)) {
+      year = date;
+      date = null;
+    }
+    let d = is('Date', date) ? date : new Date(date);
     let nextYear = d.getFullYear() + year;
     let month = d.getMonth() + 1;
     let day = d.getDate();
@@ -469,6 +495,46 @@ let Utils = (function() {
   }
 
   /**
+   * 步进月份，返回 yyyy-MM-dd
+   * @param {*} date 日期
+   * @param {Number} month 月份，正：往后 负：往前
+   * @param {String} pattern 日期格式，默认未 yyyy-MM-dd
+   */
+  function stepMonth(date, month, pattern = 'yyyy-MM-dd') {
+    if (is('String', month)) {
+      pattern = month;
+      month = null;
+    }
+    if (is('Number', date)) {
+      month = date;
+      date = null;
+    }
+    let d = is('Date', date) ? date : new Date(date || Date.now());
+    d.setMonth(d.getMonth() + month);
+    return d.Format(pattern);
+  }
+
+  /**
+   * 步进天数，返回 yyyy-MM-dd
+   * @param {*} date 日期
+   * @param {Number} days 天数，正：往后 负：往前
+   * @param {String} pattern 日期格式，默认未 yyyy-MM-dd
+   */
+  function stepDays(date, days, pattern = 'yyyy-MM-dd') {
+    if (is('String', days)) {
+      pattern = days;
+      days = null;
+    }
+    if (is('Number', date)) {
+      days = date;
+      date = null;
+    }
+    let d = is('Date', date) ? date : new Date(date || Date.now());
+    d.setDate(d.getDate() + days);
+    return d.Format(pattern);
+  }
+
+  /**
    * 比较日期大小
    * @param {Object} date1 日期1
    * @param {Object} date2 日期2
@@ -492,6 +558,30 @@ let Utils = (function() {
           date2 :
           new Date(date2).getTime();
     return dateTime1 > dateTime2;
+  }
+
+  /**
+   * 计算两个日期相差的天数（第一个参数为减数）
+   * @param {Object} sDate1 日期1
+   * @param {Object} sDate2 日期2
+   */
+  function dateDiff(date1, date2) {
+    if (!date1 || !date2) {
+      return 0;
+    }
+    let dateTime1 =
+      date1 instanceof Date ?
+        date1.getTime() :
+        /^(\+|-)?\d+($|\.\d+$)/.test(date1) ?
+          date1 :
+          new Date(date1).getTime();
+    let dateTime2 =
+      date2 instanceof Date ?
+        date2.getTime() :
+        /^(\+|-)?\d+($|\.\d+$)/.test(date2) ?
+          date2 :
+          new Date(date2).getTime();
+    return parseInt((dateTime1 - dateTime2) / 1000 / 60 / 60 / 24); //把相差的毫秒数转换为天数
   }
 
   /**
@@ -787,14 +877,16 @@ let Utils = (function() {
   /**
    * 深拷贝
    * @param {Object} source
+   * @param {Array} ignoreKeys 忽略键名
    */
-  function deepClone(source) {
+  function deepClone(source, ignoreKeys) {
     if (!source && typeof source !== 'object') {
       throw new Error('error arguments', 'shallowClone');
     }
+    ignoreKeys = Array.isArray(ignoreKeys) ? ignoreKeys : [];
     const targetObj = source.constructor === Array ? [] : {};
     for (const keys in source) {
-      if (source.hasOwnProperty(keys)) {
+      if (source.hasOwnProperty(keys) && !ignoreKeys.includes(keys)) {
         if (source[keys] && typeof source[keys] === 'object') {
           targetObj[keys] = source[keys].constructor === Array ? [] : {};
           targetObj[keys] = deepClone(source[keys]);
@@ -867,10 +959,10 @@ let Utils = (function() {
 
   /**
    * 导出 table 标签到 excel
-   * @param {String} selector table 选择器
+   * @param {String} selector table 选择器，比如 .el-table
    * @param {String} fileName 导出的文件名
-   * @param {Array|String} tHeader 表头数组或表头选择器
-   * @param {Object} opts 配置项目(忽略下标:{ignore: index})
+   * @param {Array/String} tHeader 表头数组或表头选择器
+   * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
    */
   function exportTableToExcel(selector, fileName, tHeader, opts) {
     return new Promise((resolve, reject) => {
@@ -883,7 +975,9 @@ let Utils = (function() {
         return;
       }
       require.ensure([], () => {
-        const { export_table_to_excel } = require('./Export2Excel');
+        const { export_table_to_excel } =
+          Utils.Export2Excel ||
+          (Utils.Export2Excel = require('./Export2Excel'));
         export_table_to_excel(selector, fileName, tHeader, opts);
         resolve();
       });
@@ -895,8 +989,14 @@ let Utils = (function() {
    * @param {Array} tHeader 表头 (子项可以 String或者{key: 'birthday', value: '生日', type: 'date'})
    * @param {Array} jsonData 表体(当 tHeader 包含 key、value、type 时，根据对应的 key 过滤 jsonData 导出的数据)
    * @param {String} fileName 文件名
+   * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
+   * @param {Function} filter 过滤函数，用于处理循环过程中的数据
    */
-  function exportJsonToExcel(tHeader, jsonData, fileName) {
+  function exportJsonToExcel(tHeader, jsonData, fileName, opts, filter) {
+    if (typeof opts === 'function') {
+      filter = opts;
+      opts = null;
+    }
     return new Promise((resolve, reject) => {
       if (
         !Array.isArray(tHeader) ||
@@ -904,11 +1004,7 @@ let Utils = (function() {
         tHeader.length === 0 ||
         jsonData.length === 0
       ) {
-        this.$message({
-          message: '没有可用于导出的数据',
-          type: 'warning'
-        });
-        reject('没有可用于导出的数据');
+        reject({message: '没有可用于导出的数据'});
         return;
       }
       require.ensure([], () => {
@@ -917,90 +1013,122 @@ let Utils = (function() {
         if (is('Object', tHeader[0]) && tHeader[0].hasOwnProperty('key')) {
           data = jsonData.map(v =>
             tHeader.map(j => {
+              let data = filter ? filter(v) : v;
               headerArray.length < tHeader.length && headerArray.push(j.value);
               if (j.type === 'date') {
-                return formatDateTime(v[j.key]);
+                return formatDateTime(data[j.key]);
               }
-              return v[j.key];
+              return data[j.key];
             })
           );
         }
-        const { export_json_to_excel } = require('./Export2Excel');
-        export_json_to_excel(headerArray, data, fileName);
+        const { export_json_to_excel } =
+          Utils.Export2Excel ||
+          (Utils.Export2Excel = require('./Export2Excel'));
+        export_json_to_excel(headerArray, data, fileName, opts);
         resolve();
       });
     });
   }
 
   /**
-   * 重置Model对象
-   * @param {Object|Array} model model对象
-   * @param {String|Array} ignore 忽略字段
-   * @param {Boolean} deep 是否深度重置（内嵌对象重置）
+   * 数字是个位数的话在前面添加0
    */
-  function resetModel(model, ignore, deep) {
-    if (typeof ignore === 'boolean') {
-      deep = ignore;
-      ignore = [];
+  function singeZero(val) {
+    return String(val).length < 2 ? '0' + val : val;
+  }
+  /**
+   * 分钟转换为小时
+   */
+  function formatMinutes(minutes) {
+    if (minutes / 60 / 24 >= 1) {
+      return (
+        singeZero(parseInt(minutes / 60 / 24)) +
+        '天' +
+        singeZero(parseInt(minutes / 60 % 24)) +
+        '小时' +
+        singeZero(minutes % 60) +
+        '分钟'
+      );
+    } else if (minutes / 60 >= 1) {
+      return (
+        singeZero(parseInt(minutes / 60)) +
+        '小时' +
+        singeZero(minutes % 60) +
+        '分钟'
+      );
     }
-    ignore = Array.isArray(ignore) ? ignore : [ignore];
-    if (is('Object', model)) {
-      forEach(model, (value, key) => {
-        if (inArray(key, ignore) >= 0) return true;
-        if (is('Object', value)) {
-          deep ? resetModel(value, ignore) : model[key] = {};
-        } else if (Array.isArray(value)) {
-          deep ?
-            value.forEach(vl => resetModel(vl, ignore)) :
-            model[key] = [];
-        } else {
-          model[key] = '';
-        }
-      });
-    } else if (Array.isArray(model)) {
-      model.forEach(item => resetModel(item, ignore));
+    return singeZero(minutes) + '分钟';
+  }
+  /**
+   * 秒转换为分钟
+   */
+  function formatSeconds(seconds) {
+    if (seconds / 60 / 60 / 24 >= 1) {
+      return (
+        singeZero(parseInt(seconds / 60 / 60 / 24)) +
+        '天' +
+        singeZero(parseInt(seconds / 60 / 60 % 24)) +
+        '小时' +
+        singeZero(parseInt(seconds / 60 % 60)) +
+        '分钟' +
+        singeZero(seconds % 60) +
+        '秒'
+      );
+    } else if (seconds / 60 / 60 >= 1) {
+      return (
+        singeZero(parseInt(seconds / 60 / 60)) +
+        '小时' +
+        singeZero(parseInt(seconds / 60 % 60)) +
+        '分钟' +
+        singeZero(seconds % 60) +
+        '秒'
+      );
+    } else if (seconds / 60 >= 1) {
+      return (
+        singeZero(parseInt(seconds / 60)) +
+        '分钟' +
+        singeZero(seconds % 60) +
+        '秒'
+      );
     }
-    return model;
+    return singeZero(seconds) + '秒';
   }
 
   /**
-   * 设置model
-   * @param {Object} model 需要设置的对象
-   * @param {Object} value 赋值来源
-   * @param {Array} keys 需要赋值的键名
+   * 清楚所有的 timeout、interval
    */
-  function setModelValue(model, value, keys) {
-    if (!value) return model;
-    if (keys && Array.isArray(keys)) {
-      keys.forEach(key => {
-        model[key] = value[key];
-      });
-    } else {
-      forEach(value, (val, key) => {
-        model[key] = val;
-      });
+  function clearAllTimeInterval() {
+    var id = setTimeout(function() {}, 0);
+    for (let i = id; i > 0; i--) {
+      clearTimeout(i);
     }
-    return model;
   }
 
   return {
     isEmpty: isEmpty, //是否为空
+    isEmptyArray: isEmptyArray, //是否为空数组
     trim: trim, //去除空格
     is: is, //数据类型判断(Object|Array|String等)
     getUrlParams: getUrlParams, //获取Url传参(a?code=123)
     getUrlVars: getUrlVars, //获取URL全部参数
     removeUrlParam: removeUrlParam, //移除URL参数
     setUrlParams: setUrlParams, //设置URL参数
-    setSessionStorage: setSessionStorage, //存入 session 缓存 （自动转换为String）
-    getSessionStorage: getSessionStorage, //取出 session 缓存（自动转换为Object）
-    setLocalStorage: setLocalStorage, //存入 local 缓存 （自动转换为String）
-    getLocalStorage: getLocalStorage, //取出 local 缓存（自动转换为Object）
+    setSessionItem: setSessionItem, //存入 session 缓存 （自动转换为String）
+    getSessionItem: getSessionItem, //取出 session 缓存（自动转换为Object）
+    removeSessionItem: removeSessionItem, //移除SessionItem
+    setLocalItem: setLocalItem, //存入 local 缓存 （自动转换为String）
+    getLocalItem: getLocalItem, //取出 local 缓存（自动转换为Object）
+    removeLocalItem: removeLocalItem, //移除localItem
     evalJson: evalJson, //解析JSON字符串（过滤XSS攻击代码）
     replaceAll: replaceAll, //替换所有指定的字符
     formatDateTime: formatDateTime, //格式化日期(支持Date、时间戳、日期格式字符串)
-    calYear: calYear, //计算相差年份
+    stepYear: stepYear, //步进年份
+    stepMonth: stepMonth, //步进月份
+    stepDays: stepDays, //步进天数
     calcAge: calcAge, //计算周岁
     compareDate: compareDate, //比较日期大小
+    dateDiff: dateDiff, //计算日期相差天数
     uuid: uuid, //生成36位唯一码（同 Java UUID）
     hideKeyboard: hideKeyboard, //隐藏软键盘
     pathToRegexp: pathToRegexp, //根据规则获取路径参数（/123/456 => /:code/:id）
@@ -1021,8 +1149,9 @@ let Utils = (function() {
     toThousandslsFilter: toThousandslsFilter, //千分位分割
     exportTableToExcel: exportTableToExcel, //导出table表格到 Excel
     exportJsonToExcel: exportJsonToExcel, //导出JSON数据到Excel
-    resetModel: resetModel, //重置Model对象
-    setModelValue: setModelValue //设置Model 数据 setModelValue(obj, value);
+    formatMinutes: formatMinutes, // 分钟转为小时，天
+    formatSeconds: formatSeconds, //秒数转换为分钟，小时
+    clearAllTimeInterval: clearAllTimeInterval //清楚所有的timeout、interval
   };
 })();
 

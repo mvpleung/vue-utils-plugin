@@ -78,9 +78,62 @@ let UiTools = (function() {
     };
   })('modal-open-helper');
 
+  /**
+   * 处理滚动穿透
+   * @param {String} layerNode 需要滚动的节点
+   */
+  let bubbleScroll = function(layerNode) {
+    if (!document.querySelector(layerNode)) return;
+
+    this.popupLayer = document.querySelector(layerNode);
+    this.startX = 0;
+    this.startY = 0;
+
+    this.popupLayer.addEventListener(
+      'touchstart',
+      function(e) {
+        this.startX = e.changedTouches[0].pageX;
+        this.startY = e.changedTouches[0].pageY;
+      },
+      false
+    );
+
+    // 仿innerScroll方法
+    this.popupLayer.addEventListener(
+      'touchmove',
+      function(e) {
+        e.stopPropagation();
+
+        var deltaX = e.changedTouches[0].pageX - this.startX;
+        var deltaY = e.changedTouches[0].pageY - this.startY;
+
+        // 只能纵向滚
+        if (Math.abs(deltaY) < Math.abs(deltaX)) {
+          e.preventDefault();
+          return false;
+        }
+
+        if (this.offsetHeight + this.scrollTop >= this.scrollHeight) {
+          if (deltaY < 0) {
+            e.preventDefault();
+            return false;
+          }
+        }
+        if (this.scrollTop === 0) {
+          if (deltaY > 0) {
+            e.preventDefault();
+            return false;
+          }
+        }
+      },
+      false
+    );
+  };
+
   return {
     toggle: toggle, //切换控件显示隐藏
-    modalHelper: modalHelper //解决弹窗滚动穿透
+    modalHelper: modalHelper, //解决弹窗滚动穿透(父层处理)
+    bubbleScroll: bubbleScroll //处理弹层滚动穿透(弹出层处理)
   };
 })();
 
