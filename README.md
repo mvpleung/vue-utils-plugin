@@ -2,7 +2,7 @@
 
 ### install 
 ```
-npm install vue-utils-plugin
+npm i @mvpleung/vue-utils
 ```
 
 ### use
