@@ -402,6 +402,21 @@ let Utils = (function() {
   }
 
   /**
+   * 变幻Date，兼容 iOS
+   * @param {String} date
+   */
+  function flatDateStr(date) {
+    if (is('String', date) && !isEmpty(date)) {
+      date = date
+        .replace(/T/g, ' ')
+        .replace(/\.[\d]{3}Z/, '')
+        .replace(/(-)/g, '/');
+      if (date.indexOf('.') > 0) date = date.slice(0, date.indexOf('.'));
+    }
+    return date;
+  }
+
+  /**
    * 格式化时间
    * @param {Number|Date} unixTime 日期或时间戳
    * @param {String} pattern 日期格式规则(如:YYYY-MM-dd)
@@ -412,12 +427,7 @@ let Utils = (function() {
       return unixTime.Format(pattern);
     }
     if (is('String', unixTime) && !isEmpty(unixTime)) {
-      unixTime = unixTime
-        .replace(/T/g, ' ')
-        .replace(/\.[\d]{3}Z/, '')
-        .replace(/(-)/g, '/');
-      if (unixTime.indexOf('.') > 0)
-        unixTime = unixTime.slice(0, unixTime.indexOf('.'));
+      unixTime = flatDateStr(unixTime);
       if (unixTime.length === 8) {
         unixTime =
           unixTime.substring(0, 4) +
@@ -430,30 +440,6 @@ let Utils = (function() {
     return !unixTime || isEmpty(unixTime) ?
       '' :
       new Date(unixTime).Format(pattern);
-  }
-
-  /**
-   * 步进年份，返回 yyyy-MM-dd
-   * @param {Data|String} date 日期对象或日期字符串
-   * @param {Number} year 负数减一年，正数加一年
-   * @returns {String}
-   */
-  function stepYear(date, year) {
-    if (is('Number', date)) {
-      year = date;
-      date = null;
-    }
-    let d = is('Date', date) ? date : new Date(date);
-    let nextYear = d.getFullYear() + year;
-    let month = d.getMonth() + 1;
-    let day = d.getDate();
-    if (month < 10) {
-      month = '0' + month;
-    }
-    if (day < 10) {
-      day = '0' + day;
-    }
-    return nextYear + '-' + month + '-' + day;
   }
 
   /**
@@ -475,7 +461,7 @@ let Utils = (function() {
     ) {
       today = isEmpty(today) ?
         new Date() :
-        typeof today === 'object' ? today : new Date(today);
+        typeof today === 'object' ? today : new Date(flatDateStr(today));
       let age = today.getFullYear() - r[1];
       if (today.getMonth() > birth.getMonth()) {
         return age;
@@ -495,23 +481,65 @@ let Utils = (function() {
   }
 
   /**
+   * 步进年份，返回 yyyy-MM-dd
+   * @param {Data|String} date 日期对象或日期字符串
+   * @param {Number} year 负数减一年，正数加一年
+   * @param {Boolean} format 是否格式化为字符串，默认为 true
+   * 
+   * @returns {String}
+   */
+  function stepYear(date, year, format = true) {
+    if (is('Boolean', year)) {
+      format = year;
+      year = 0;
+    }
+    if (is('Number', date)) {
+      year = date;
+      date = null;
+    }
+    date = flatDateStr(date);
+    let d = is('Date', date) ? date : new Date(date || Date.now());
+    let nextYear = d.getFullYear() + year;
+    let month = d.getMonth() + 1;
+    let day = d.getDate();
+    if (month < 10) {
+      month = '0' + month;
+    }
+    if (day < 10) {
+      day = '0' + day;
+    }
+    let dateStr = nextYear + '-' + month + '-' + day;
+    return format ? dateStr : new Date(flatDateStr(dateStr));
+  }
+
+  /**
    * 步进月份，返回 yyyy-MM-dd
    * @param {*} date 日期
    * @param {Number} month 月份，正：往后 负：往前
    * @param {String} pattern 日期格式，默认未 yyyy-MM-dd
+   * @param {Boolean} format 是否格式化为字符串，默认为 true
    */
-  function stepMonth(date, month, pattern = 'yyyy-MM-dd') {
+  function stepMonth(date, month, pattern = 'yyyy-MM-dd', format = true) {
+    if (is('Boolean', pattern)) {
+      format = pattern;
+      pattern = 'yyyy-MM-dd';
+    }
     if (is('String', month)) {
       pattern = month;
+      month = null;
+    }
+    if (is('Boolean', month)) {
+      format = month;
       month = null;
     }
     if (is('Number', date)) {
       month = date;
       date = null;
     }
+    date = flatDateStr(date);
     let d = is('Date', date) ? date : new Date(date || Date.now());
     d.setMonth(d.getMonth() + month);
-    return d.Format(pattern);
+    return format ? d.Format(pattern) : d;
   }
 
   /**
@@ -519,19 +547,29 @@ let Utils = (function() {
    * @param {*} date 日期
    * @param {Number} days 天数，正：往后 负：往前
    * @param {String} pattern 日期格式，默认未 yyyy-MM-dd
+   * @param {Boolean} format 是否格式化为字符串，默认为 true
    */
-  function stepDays(date, days, pattern = 'yyyy-MM-dd') {
+  function stepDays(date, days, pattern = 'yyyy-MM-dd', format = true) {
+    if (is('Boolean', pattern)) {
+      format = pattern;
+      pattern = 'yyyy-MM-dd';
+    }
     if (is('String', days)) {
       pattern = days;
+      days = null;
+    }
+    if (is('Boolean', days)) {
+      format = days;
       days = null;
     }
     if (is('Number', date)) {
       days = date;
       date = null;
     }
+    date = flatDateStr(date);
     let d = is('Date', date) ? date : new Date(date || Date.now());
     d.setDate(d.getDate() + days);
-    return d.Format(pattern);
+    return format ? d.Format(pattern) : d;
   }
 
   /**
@@ -550,13 +588,13 @@ let Utils = (function() {
         date1.getTime() :
         /^(\+|-)?\d+($|\.\d+$)/.test(date1) ?
           date1 :
-          new Date(date1).getTime();
+          new Date(flatDateStr(date1)).getTime();
     let dateTime2 =
       date2 instanceof Date ?
         date2.getTime() :
         /^(\+|-)?\d+($|\.\d+$)/.test(date2) ?
           date2 :
-          new Date(date2).getTime();
+          new Date(flatDateStr(date2)).getTime();
     return dateTime1 > dateTime2;
   }
 
@@ -574,13 +612,13 @@ let Utils = (function() {
         date1.getTime() :
         /^(\+|-)?\d+($|\.\d+$)/.test(date1) ?
           date1 :
-          new Date(date1).getTime();
+          new Date(flatDateStr(date1)).getTime();
     let dateTime2 =
       date2 instanceof Date ?
         date2.getTime() :
         /^(\+|-)?\d+($|\.\d+$)/.test(date2) ?
           date2 :
-          new Date(date2).getTime();
+          new Date(flatDateStr(date2)).getTime();
     return parseInt((dateTime1 - dateTime2) / 1000 / 60 / 60 / 24); //把相差的毫秒数转换为天数
   }
 
@@ -950,9 +988,12 @@ let Utils = (function() {
   /**
    * 千分位分割
    * @param {Number} num 数字
+   * @param {Number} fixed 小数位数，默认2位
    */
-  function toThousandslsFilter(num) {
-    return (Number(num) || 0)
+  function toThousandslsFilter(num, fixed = 2) {
+    let number = Number(num);
+    if (isNaN(number)) return num;
+    return (number.toFixed(fixed) || 0)
       .toString()
       .replace(/^-?\d+/g, m => m.replace(/(?=(?!\b)(\d{3})+$)/g, ','));
   }
