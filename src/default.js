@@ -485,7 +485,7 @@ let Utils = (function() {
    * @param {Data|String} date 日期对象或日期字符串
    * @param {Number} year 负数减一年，正数加一年
    * @param {Boolean} format 是否格式化为字符串，默认为 true
-   * 
+   *
    * @returns {String}
    */
   function stepYear(date, year, format = true) {
@@ -1045,7 +1045,7 @@ let Utils = (function() {
         tHeader.length === 0 ||
         jsonData.length === 0
       ) {
-        reject({message: '没有可用于导出的数据'});
+        reject({ message: '没有可用于导出的数据' });
         return;
       }
       require.ensure([], () => {
@@ -1146,6 +1146,58 @@ let Utils = (function() {
     }
   }
 
+  /**
+   * 下载文件
+   * @param {String|Canvas|Blob} source 下载地址
+   */
+  function download(source, saveName) {
+    if (
+      Boolean(window.ActiveXObject) ||
+      'ActiveXObject' in window ||
+      navigator.userAgent.indexOf('Edge') > -1 //Edge
+    ) {
+      if (is('HTMLCanvasElement', source)) {
+        var blob = source.msToBlob();
+        window.navigator.msSaveBlob(
+          blob,
+          `${saveName || '下载'}.${blob.type.split('/')[1]}`
+        );
+      } else if (
+        is('String', source) &&
+        /^\s*data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)?)?(;base64)?,([a-z0-9!$&',()*+;=\-._~:@\/?%\s]*?)\s*$/i.test(
+          source
+        )
+      ) {
+        //为 base64 字符串
+        var canvas = document.createElement('canvas');
+        var img = new Image();
+        img.onload = function() {
+          canvas.drawImage(img);
+          download(canvas, saveName);
+        };
+        img.src = source;
+      } else {
+        let oPop = window.open(
+          source,
+          '',
+          'width=1, height=1, top=5000, left=5000'
+        );
+        for (; oPop.document.readyState !== 'complete'; ) {
+          if (oPop.document.readyState === 'complete') break;
+        }
+        oPop.document.execCommand('SaveAs');
+        oPop.close();
+        oPop = null;
+      }
+    } else {
+      var a = document.createElement('a');
+      var event = new MouseEvent('click');
+      a.download = saveName || '下载图片';
+      a.href = is('HTMLCanvasElement', source) ? source.toDataURL() : source;
+      a.dispatchEvent(event);
+    }
+  }
+
   return {
     isEmpty: isEmpty, //是否为空
     isEmptyArray: isEmptyArray, //是否为空数组
@@ -1192,7 +1244,8 @@ let Utils = (function() {
     exportJsonToExcel: exportJsonToExcel, //导出JSON数据到Excel
     formatMinutes: formatMinutes, // 分钟转为小时，天
     formatSeconds: formatSeconds, //秒数转换为分钟，小时
-    clearAllTimeInterval: clearAllTimeInterval //清楚所有的timeout、interval
+    clearAllTimeInterval: clearAllTimeInterval, //清楚所有的timeout、interval
+    download: download //下载文件
   };
 })();
 
