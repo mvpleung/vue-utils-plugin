@@ -599,11 +599,14 @@ let Utils = (function() {
   }
 
   /**
-   * 计算两个日期相差的天数（第一个参数为减数）
+   * 计算两个日期相差的天数、小时、分钟、秒（第一个参数为减数）
    * @param {Object} sDate1 日期1
    * @param {Object} sDate2 日期2
+   * @param {String} unit 单位，默认 day: 天, 取值范围[ 'day', 'hour', 'minute', 'second']
+   *
+   * @returns {Number}
    */
-  function dateDiff(date1, date2) {
+  function dateDiff(date1, date2, unit = 'day') {
     if (!date1 || !date2) {
       return 0;
     }
@@ -619,7 +622,17 @@ let Utils = (function() {
         /^(\+|-)?\d+($|\.\d+$)/.test(date2) ?
           date2 :
           new Date(flatDateStr(date2)).getTime();
-    return parseInt((dateTime1 - dateTime2) / 1000 / 60 / 60 / 24); //把相差的毫秒数转换为天数
+    let second = (dateTime1 - dateTime2) / 1000;
+    if (unit === 'second') {
+      return second;
+    }
+    if (unit === 'minute') {
+      return parseInt(second / 60);
+    }
+    if (unit === 'hour') {
+      return parseInt(second / 60 / 60);
+    }
+    return parseInt(second / 60 / 60 / 24); //把相差的毫秒数转换为天数
   }
 
   /**
