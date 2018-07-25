@@ -1,8 +1,8 @@
 {
-  "name": "vue-utils-plugin",
-  "version": "0.0.3",
+  "name": "@mvpleung/vue-utils",
+  "version": "0.0.7",
   "description": "Vue's tool plugin",
-  "main": "index.js",
+  "main": "./src/index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
