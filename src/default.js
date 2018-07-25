@@ -654,20 +654,6 @@ let Utils = (function() {
   }
 
   /**
-   * 隐藏软键盘
-   * @param {Element} el 需要隐藏软键盘的Dom节点或父节点（选填）
-   */
-  function hideKeyboard(el) {
-    document.activeElement.blur();
-    if (el) {
-      el.blur();
-      el.querySelector('input').blur();
-    } else {
-      document.querySelector('input').blur();
-    }
-  }
-
-  /**
    * 动态匹配参数
    * @param {String} prefix 匹配规则（如：/productCal/:id/:code）
    * @param {String} path 匹配路径，非必填，默认取当前Hash路径(如:/productCal/123/456)
@@ -770,6 +756,9 @@ let Utils = (function() {
    * 延迟触发
    * @param {*} el dom节点
    * @param {Object} options
+   * @param {Function} options.keyup
+   * @param {Function} options.keydown
+   * @param {Function} options.keypress
    */
   function koala(el, options) {
     if (isEmpty(el)) return;
@@ -1021,11 +1010,9 @@ let Utils = (function() {
   function exportTableToExcel(selector, fileName, tHeader, opts) {
     return new Promise((resolve, reject) => {
       if (isEmpty(selector) || !is('String', selector)) {
-        this.$message({
-          message: '没有可用于导出的表格',
-          type: 'warning'
+        reject({
+          message: '没有可用于导出的表格'
         });
-        reject();
         return;
       }
       require.ensure([], () => {
@@ -1064,7 +1051,8 @@ let Utils = (function() {
       require.ensure([], () => {
         let data = jsonData,
           headerArray = [];
-        if (is('Object', tHeader[0]) && tHeader[0].hasOwnProperty('key')) {
+        tHeader = tHeader.filter(header => header.key !== undefined);
+        if (is('Object', tHeader[0]) && tHeader.length > 0) {
           data = jsonData.map(v =>
             tHeader.map(j => {
               let data = filter ? filter(v) : v;
@@ -1187,6 +1175,7 @@ let Utils = (function() {
         img.onload = function() {
           canvas.drawImage(img);
           download(canvas, saveName);
+          window.URL && window.URL.revokeObjectURL(source);
         };
         img.src = source;
       } else {
@@ -1236,7 +1225,6 @@ let Utils = (function() {
     compareDate: compareDate, //比较日期大小
     dateDiff: dateDiff, //计算日期相差天数
     uuid: uuid, //生成36位唯一码（同 Java UUID）
-    hideKeyboard: hideKeyboard, //隐藏软键盘
     pathToRegexp: pathToRegexp, //根据规则获取路径参数（/123/456 => /:code/:id）
     get: get, //通过既定路径获取对象参数 get(obj, 'a.b.c')
     attribute: attribute, //同上（此函数不支持数组）

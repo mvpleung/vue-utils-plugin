@@ -2,7 +2,7 @@
  * @Author: liangzc 
  * @Date: 2017-07-31 
  * @Last Modified by: liangzc
- * @Last Modified time: 2018-02-13 14:54:18
+ * @Last Modified time: 2018-07-05 13:51:01
  */
 /**
  * @param {Vue} Vue
@@ -12,8 +12,9 @@ let install = function(Vue, options) {
   if (install.installed) return;
   Vue.$utils = Vue.prototype.$utils = Object.assign(
     {},
-    require('./ui.tool'),
     require('./default'),
+    require('./ui.tool'),
+    require('./socket.tool'),
     (options || {}).utils || {}
   ); //添加vm实例验证属性
 };

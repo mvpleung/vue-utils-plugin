@@ -1,5 +1,19 @@
 let UiTools = (function() {
   /**
+   * 隐藏软键盘
+   * @param {Element} el 需要隐藏软键盘的Dom节点或父节点（选填）
+   */
+  function hideKeyboard(el) {
+    document.activeElement.blur();
+    if (el) {
+      el.blur();
+      el.querySelector('input').blur();
+    } else {
+      document.querySelector('input').blur();
+    }
+  }
+
+  /**
    * 切换控件显示隐藏
    * @param {Element} el 节点
    * @param {Element} arrow 箭头
@@ -131,6 +145,7 @@ let UiTools = (function() {
   };
 
   return {
+    hideKeyboard: hideKeyboard, //隐藏软键盘
     toggle: toggle, //切换控件显示隐藏
     modalHelper: modalHelper, //解决弹窗滚动穿透(父层处理)
     bubbleScroll: bubbleScroll //处理弹层滚动穿透(弹出层处理)

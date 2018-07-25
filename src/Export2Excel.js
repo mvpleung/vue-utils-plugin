@@ -192,7 +192,7 @@ function saveExcel(data, ranges, fileName, opts) {
         return { wch: 10 };
       } else if (val.toString().charCodeAt(0) > 255) {
         /*再判断是否为中文*/
-        return { wch: val.toString().length * 5 };
+        return { wch: val.toString().length * 3 };
       } else {
         return { wch: val.toString().length };
       }
