@@ -20,17 +20,17 @@ npm i @mvpleung/vue-utils
     import utilsPlugin from "vue-utils-plugin";
     Vue.use(utilsPlugin,{
         utils: {
-			replace: function(str, replace, replaceStr){}
-		}
+		replace: function(str, replace, replaceStr){}
+	}
     });
     export default {
         name: 'app',
         data () {
             return {
                 name: '',
-				info: {
-					name: ''
-				}
+		info: {
+			name: ''
+		}
             }
         },
         methods:{
@@ -55,7 +55,7 @@ npm i @mvpleung/vue-utils
 
 
 ##### 默认工具
-参考 ./src/default
+参考 [./src/default](src/default.js)
 
 |Method|Params|Description|
 |---|----|----|
