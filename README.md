@@ -6,13 +6,13 @@ npm i @mvpleung/vue-utils
 ```
 
 ### use
-```vue
+```js
 <template>
+  <div>
 	<div>
-		<div>
-			<input v-model="name" v-if="$utils.isEmpty(info.name)" placeholder=""/>
-		</div>
+	 <input v-model="name" v-if="$utils.isEmpty(info.name)" placeholder=""/>
 	</div>
+  </div>
 </template>
 
 <script>
@@ -20,7 +20,7 @@ npm i @mvpleung/vue-utils
     import utilsPlugin from "vue-utils-plugin";
     Vue.use(utilsPlugin,{
         utils: {
-		replace: function(str, replace, replaceStr){}
+		    replace: function(str, replace, replaceStr){}
 	}
     });
     export default {
@@ -28,9 +28,9 @@ npm i @mvpleung/vue-utils
         data () {
             return {
                 name: '',
-		info: {
-			name: ''
-		}
+                info: {
+                  name: ''
+                }
             }
         },
         methods:{
