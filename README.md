@@ -1,17 +1,19 @@
 # vue-utils-plugin
 
-### install 
-```
+## install 
+
+```js
 npm i @mvpleung/vue-utils
 ```
 
-### use
+## use
+
 ```js
 <template>
   <div>
-	<div>
-	 <input v-model="name" v-if="$utils.isEmpty(info.name)" placeholder=""/>
-	</div>
+    <div>
+      <input v-model="name" v-if="$utils.isEmpty(info.name)" placeholder=""/>
+    </div>
   </div>
 </template>
 
@@ -20,9 +22,10 @@ npm i @mvpleung/vue-utils
     import utilsPlugin from "vue-utils-plugin";
     Vue.use(utilsPlugin,{
         utils: {
-		    replace: function(str, replace, replaceStr){}
-	}
-    });
+         replace: function(str, replace, replaceStr){}
+        }
+      }
+    );
     export default {
         name: 'app',
         data () {
@@ -43,18 +46,18 @@ npm i @mvpleung/vue-utils
 
 ```
 
-
 ### 配置说明
-配置传入一个对象
+
+> 配置传入一个对象
+
 ```js
 {
     utils:{}//自定义工具方法
 }
 ```
 
+#### 默认工具
 
-
-##### 默认工具
 参考 [./src/default](src/default.js)
 
 |Method|Params|Description|
@@ -105,14 +108,37 @@ npm i @mvpleung/vue-utils
 |**formatSeconds**|`seconds: Number`|格式化秒数('5天 5小时 20分钟 20秒')|
 |**clearAllTimeInterval**||清除所有的timeout、interval|
 |**download**|source: &#91;String&#124;Canvas&#124;Blob&#93;, `saveName: String`|下载文件|
+
+#### Socket工具
+
+参考 [./src/socket.tool.js](src/socket.tool.js)
+
+|Method|Params|Description|
+|---|----|----|
+|**createWebSocket**|`url: String`, `option: Object`|创建websocket, `url: 符合socket规范的链接, option: 配置项，参考下文`|
+
+|Param|Type|Description|
+|---|----|----|
+|heartCheck|Boolean|是否开启心跳检测|
+|reconnect|Boolean|是否重连,默认true|
+|heartTime|Number|心跳时间,默认60s|
+|timeout|Number|超时时间，默认15分钟|
+|reDelay|Number|重连延迟间隔，默认为30秒|
+|callbacks|Object|onopen(event), onclose(event), onerror(event), onmessage(event)|
+|debug|Boolean|是否为调试模式(输入日志)|
+
+#### UI工具
+
+参考 [./src/ui.tool.js](src/ui.tool.js)
+
+|Method|Params|Description|
+|---|----|----|
 |**hideKeyboard**|`el: HTMLElement`|隐藏软键盘, `el: 不填写隐藏全局`|
 |**toggle**|`el: HTMLElement`, `arrow: HTMLElement`, `deg: Number`|切换控件显示隐藏, `el: 隐藏的节点`, `arrow: 箭头Dom`, `deg: rotate角度`|
 |**modalHelper**||解决弹窗滚动穿透(父层处理)|
 |**bubbleScroll**|`layerNode: String`|处理弹层滚动穿透(弹出层处理), `layerNode: 需要滚动节点的选择器`|
-|**createWebSocket**|`url: String`, `option: Object`|创建websocket, `option: {heartCheck: 是否开启心跳检测; reconnect: 是否重连,默认true; heartTime: 心跳时间,默认60s; timeout: 超时时间，默认15分钟; reDelay: 重连延迟间隔，默认为30秒; callbacks: {onopen(event), onclose(event), onerror(event), onmessage(event)}; debug: 是否为调试模式}`|
 
-##### License
+#### License
+
 -------
-
 [LICENSE](https://github.com/mvpleung/vue-utils-plugin/blob/master/LICENSE)
-
