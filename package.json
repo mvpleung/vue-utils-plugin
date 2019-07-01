@@ -1,6 +1,6 @@
 {
   "name": "@mvpleung/vue-utils",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Vue's tool plugin",
   "main": "./src/index.js",
   "scripts": {
