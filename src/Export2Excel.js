@@ -130,8 +130,9 @@ function s2ab(s) {
  * @param {String} fileName 文件名
  * @param {Array/String} th 表头数组或表头选择器
  * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
+ * @param {Function} callback 保存回调
  */
-export function export_table_to_excel(id, fileName, th, opts) {
+export function export_table_to_excel(id, fileName, th, opts, callback) {
   let theTable = document.getElementById(id) || document.querySelector(id);
   let oo = generateArray(theTable);
   let ranges = oo[1];
@@ -139,6 +140,14 @@ export function export_table_to_excel(id, fileName, th, opts) {
   if (is('Object', th)) {
     opts = th;
     th = null;
+  }
+  if (is('Function', th)) {
+    callback = th;
+    th = null;
+  }
+  if (is('Function', opts)) {
+    callback = opts;
+    opts = null;
   }
   if ((th && typeof th === 'string') || !th) {
     let thels =
@@ -156,7 +165,7 @@ export function export_table_to_excel(id, fileName, th, opts) {
   /* original data */
   let data = oo[0];
   th && data.unshift(th);
-  saveExcel(data, ranges, fileName, opts);
+  saveExcel(data, ranges, fileName, opts, callback);
 }
 
 /**
@@ -166,16 +175,24 @@ export function export_table_to_excel(id, fileName, th, opts) {
  * @param {Array} jsonData 数据集合
  * @param {String} fileName 导出Excel 的文件名
  * @param {Object} opts 配置项目(忽略:{ignore: {index(下标), noneType: true|false (忽略类型)}})
+ * @param {Function} callback 保存回调
  */
-export function export_json_to_excel(th, jsonData, fileName, opts) {
+export function export_json_to_excel(th, jsonData, fileName, opts, callback) {
   /* original data */
-
+  if (is('Function', fileName)) {
+    callback = fileName;
+    fileName = null;
+  }
+  if (is('Function', opts)) {
+    callback = opts;
+    opts = null;
+  }
   let data = jsonData;
-  data.unshift(th);
-  saveExcel(data, null, fileName, opts);
+  th.every(t => Array.isArray(t)) ? data.unshift(...th) : data.unshift(th);
+  saveExcel(data, null, fileName, opts, callback);
 }
 
-function saveExcel(data, ranges, fileName, opts) {
+function saveExcel(data, ranges, fileName, opts, callback) {
   let ws_name = 'SheetJS';
 
   let wb = new Workbook(),
@@ -223,4 +240,5 @@ function saveExcel(data, ranges, fileName, opts) {
     new Blob([s2ab(wbout)], { type: 'application/octet-stream' }),
     (fileName || 'excel') + '.xlsx'
   );
+  callback && callback();
 }

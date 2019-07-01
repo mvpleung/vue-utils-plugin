@@ -481,6 +481,14 @@ let Utils = (function() {
   }
 
   /**
+   * 获取日期对象
+   * @param String dateStr
+   */
+  function getDate(dateStr) {
+    return dateStr ? new Date(flatDateStr(dateStr)) : new Date();
+  }
+
+  /**
    * 步进年份，返回 yyyy-MM-dd
    * @param {Data|String} date 日期对象或日期字符串
    * @param {Number} year 负数减一年，正数加一年
@@ -569,6 +577,36 @@ let Utils = (function() {
     date = flatDateStr(date);
     let d = is('Date', date) ? date : new Date(date || Date.now());
     d.setDate(d.getDate() + days);
+    return format ? d.Format(pattern) : d;
+  }
+
+  /**
+   * 步进分钟，返回 hh:mm
+   * @param {*} date 日期
+   * @param {Number} minutes 分钟数，正：往后 负：往前
+   * @param {String} pattern 日期格式，默认未 hh:mm
+   * @param {Boolean} format 是否格式化为字符串，默认为 true
+   */
+  function stepMintues(date, minutes, pattern = 'hh:mm', format = true) {
+    if (is('Boolean', pattern)) {
+      format = pattern;
+      pattern = 'hh:mm';
+    }
+    if (is('String', minutes)) {
+      pattern = minutes;
+      minutes = null;
+    }
+    if (is('Boolean', minutes)) {
+      format = minutes;
+      minutes = null;
+    }
+    if (is('Number', date)) {
+      minutes = date;
+      date = null;
+    }
+    date = flatDateStr(date);
+    let d = is('Date', date) ? date : new Date(date || Date.now());
+    d.setMinutes(d.getMinutes() + minutes);
     return format ? d.Format(pattern) : d;
   }
 
@@ -756,6 +794,7 @@ let Utils = (function() {
    * 延迟触发
    * @param {*} el dom节点
    * @param {Object} options
+   * @param {Number} options.delay 延时时间
    * @param {Function} options.keyup
    * @param {Function} options.keydown
    * @param {Function} options.keypress
@@ -1019,8 +1058,7 @@ let Utils = (function() {
         const { export_table_to_excel } =
           Utils.Export2Excel ||
           (Utils.Export2Excel = require('./Export2Excel'));
-        export_table_to_excel(selector, fileName, tHeader, opts);
-        resolve();
+        export_table_to_excel(selector, fileName, tHeader, opts, resolve);
       });
     });
   }
@@ -1051,24 +1089,28 @@ let Utils = (function() {
       require.ensure([], () => {
         let data = jsonData,
           headerArray = [];
-        tHeader = tHeader.filter(header => header.key !== undefined);
-        if (is('Object', tHeader[0]) && tHeader.length > 0) {
-          data = jsonData.map(v =>
-            tHeader.map(j => {
+        if (is('Object', tHeader[0])) {
+          tHeader = tHeader.filter(header => header.key !== undefined);
+          if (tHeader.length > 0) {
+            data = jsonData.map(v => {
               let data = filter ? filter(v) : v;
-              headerArray.length < tHeader.length && headerArray.push(j.value);
-              if (j.type === 'date') {
-                return formatDateTime(data[j.key]);
-              }
-              return data[j.key];
-            })
-          );
+              return tHeader.map(j => {
+                headerArray.length < tHeader.length &&
+                  headerArray.push(j.value);
+                if (j.type === 'date') {
+                  return formatDateTime(data[j.key]);
+                }
+                return data[j.key];
+              });
+            });
+          }
+        } else {
+          headerArray = tHeader;
         }
         const { export_json_to_excel } =
           Utils.Export2Excel ||
           (Utils.Export2Excel = require('./Export2Excel'));
-        export_json_to_excel(headerArray, data, fileName, opts);
-        resolve();
+        export_json_to_excel(headerArray, data, fileName, opts, resolve);
       });
     });
   }
@@ -1218,9 +1260,11 @@ let Utils = (function() {
     evalJson: evalJson, //解析JSON字符串（过滤XSS攻击代码）
     replaceAll: replaceAll, //替换所有指定的字符
     formatDateTime: formatDateTime, //格式化日期(支持Date、时间戳、日期格式字符串)
+    getDate: getDate, //获取日期对象(已处理浏览器兼容)
     stepYear: stepYear, //步进年份
     stepMonth: stepMonth, //步进月份
     stepDays: stepDays, //步进天数
+    stepMintues: stepMintues, //步进分钟
     calcAge: calcAge, //计算周岁
     compareDate: compareDate, //比较日期大小
     dateDiff: dateDiff, //计算日期相差天数
