@@ -56,7 +56,7 @@ npm i @mvpleung/vue-utils
 }
 ```
 
-#### 默认工具
+### 默认工具
 
 参考 [./src/default](src/default.js)
 
@@ -109,7 +109,7 @@ npm i @mvpleung/vue-utils
 |**clearAllTimeInterval**||清除所有的timeout、interval|
 |**download**|source: &#91;String&#124;Canvas&#124;Blob&#93;, `saveName: String`|下载文件|
 
-#### Socket工具
+### Socket工具
 
 参考 [./src/socket.tool.js](src/socket.tool.js)
 
@@ -127,7 +127,7 @@ npm i @mvpleung/vue-utils
 |callbacks|Object|onopen(event), onclose(event), onerror(event), onmessage(event)|
 |debug|Boolean|是否为调试模式(输入日志)|
 
-#### UI工具
+### UI工具
 
 参考 [./src/ui.tool.js](src/ui.tool.js)
 
@@ -138,7 +138,7 @@ npm i @mvpleung/vue-utils
 |**modalHelper**||解决弹窗滚动穿透(父层处理)|
 |**bubbleScroll**|`layerNode: String`|处理弹层滚动穿透(弹出层处理), `layerNode: 需要滚动节点的选择器`|
 
-#### License
+### License
 
 -------
 [LICENSE](https://github.com/mvpleung/vue-utils-plugin/blob/master/LICENSE)
