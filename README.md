@@ -99,8 +99,8 @@ npm i @mvpleung/vue-utils
 |**assignClone**|`target: Object`, `source1: Object`, `...`|深度合并（深度合并克隆）|
 |**debounce**|`func: Function`, `wait: Number`, `immediate: Boolean`|延迟触发（函数抖动）,`wait: 触发时间`, `immediate: 不等待上次结束，重新触发等待时间`|
 |**toThousandslsFilter**|`num: Number`|千分位分割 1,000|
-|**exportTableToExcel**|`selector: String`, `fileName: String`, tHeader: &#91;String&#124;Array&#93;, `opts: Object`|导出table表格到 Excel, `selector: 表格选择器`, `tHeader: 表头数组或表头选择器`, `opts: {ignore: {index(下标), noneType: true|false (忽略类型)}}`|
-|**exportJsonToExcel**|`tHeader: Array`, `jsonData: Array`, `fileName: String`, `opts: Object`, `filter: Function`|导出JSON数据到Excel, `tHeader: 表头数组`, `opts: {ignore: {index(下标), noneType: true|false (忽略类型)}}`|
+|**exportTableToExcel**|`selector: String`, `fileName: String`, tHeader: &#91;String&#124;Array&#93;, `opts: Object`|导出table表格到 Excel, `selector: 表格选择器`, `tHeader: 表头数组或表头选择器`, opts: {ignore: {index(忽略下标), noneType: true&#124;false (忽略类型)}}|
+|**exportJsonToExcel**|`tHeader: Array`, `jsonData: Array`, `fileName: String`, `opts: Object`, `filter: Function`|导出JSON数据到Excel, `tHeader: 表头数组`, opts: {ignore: {index(忽略下标), noneType: true&#124;false (忽略类型)}}, `filter: 过滤函数，用于处理循环过程中的数据`|
 |**formatMinutes**|`minutes: Number`|格式化分钟('5天 5小时 20分钟')|
 |**formatSeconds**|`seconds: Number`|格式化秒数('5天 5小时 20分钟 20秒')|
 |**clearAllTimeInterval**||清除所有的timeout、interval|
@@ -109,7 +109,7 @@ npm i @mvpleung/vue-utils
 |**toggle**|`el: HTMLElement`, `arrow: HTMLElement`, `deg: Number`|切换控件显示隐藏, `el: 隐藏的节点`, `arrow: 箭头Dom`, `deg: rotate角度`|
 |**modalHelper**||解决弹窗滚动穿透(父层处理)|
 |**bubbleScroll**|`layerNode: String`|处理弹层滚动穿透(弹出层处理), `layerNode: 需要滚动节点的选择器`|
-|**createWebSocket**|`url: String`, `option: Object`|创建websocket, `option: {heartCheck: 是否开启心跳检测, reconnect: 是否重连,默认true, heartTime: 心跳时间,默认60s, callbacks: {onopen(event), onclose(event), onerror(event), onmessage(event)}, debug: 是否为调试模式}`|
+|**createWebSocket**|`url: String`, `option: Object`|创建websocket, `option: {heartCheck: 是否开启心跳检测; reconnect: 是否重连,默认true; heartTime: 心跳时间,默认60s; timeout: 超时时间，默认15分钟; reDelay: 重连延迟间隔，默认为30秒; callbacks: {onopen(event), onclose(event), onerror(event), onmessage(event)}; debug: 是否为调试模式}`|
 
 ##### License
 -------
